@@ -15,12 +15,18 @@ services:
       SERVER_ID: backend-2
     restart: unless-stopped
 
-  cloudflared:
+  # Quick tunnels: no login, no domain. Each prints a random *.trycloudflare.com
+  # URL (see logs). URLs change on every restart — update Apigee targets each time.
+  tunnel-1:
     image: cloudflare/cloudflared:latest
-    command: tunnel --config /etc/cloudflared/config.yml run
-    volumes:
-      - ./cloudflared:/etc/cloudflared   # holds config.yml + <TUNNEL_ID>.json creds
+    command: tunnel --no-autoupdate --url http://backend-1:3001
     restart: unless-stopped
     depends_on:
       - backend-1
+
+  tunnel-2:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://backend-2:3001
+    restart: unless-stopped
+    depends_on:
       - backend-2
