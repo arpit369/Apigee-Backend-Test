@@ -2,14 +2,14 @@
 # cloudflared dials OUT to Cloudflare, so the server firewall stays fully closed.
 services:
   backend-1:
-    build: .
+    image: ghcr.io/arpit369/apigee-backend-test:latest
     environment:
       PORT: 3001
       SERVER_ID: backend-1
     restart: unless-stopped
 
   backend-2:
-    build: .
+    image: ghcr.io/arpit369/apigee-backend-test:latest
     environment:
       PORT: 3001            # same internal port, different container + SERVER_ID
       SERVER_ID: backend-2
