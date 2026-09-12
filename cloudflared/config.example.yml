@@ -1,0 +1,11 @@
+# Copy to config.yml and fill in TUNNEL_ID + your domain.
+# Routes each hostname to a backend container over the docker network.
+tunnel: TUNNEL_ID
+credentials-file: /etc/cloudflared/TUNNEL_ID.json
+
+ingress:
+  - hostname: api1.YOURDOMAIN.com
+    service: http://backend-1:3001
+  - hostname: api2.YOURDOMAIN.com
+    service: http://backend-2:3001
+  - service: http_status:404   # catch-all, required last rule

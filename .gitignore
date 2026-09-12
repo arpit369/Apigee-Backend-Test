@@ -1,3 +1,8 @@
 node_modules/
 .env
 npm-debug.log
+
+# Cloudflare tunnel secrets — never commit
+cloudflared/*.json
+cloudflared/cert.pem
+cloudflared/config.yml
