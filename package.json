@@ -1,12 +1,13 @@
 {
   "name": "apigee-enterprise-api-backend",
-  "version": "1.0.0",
-  "description": "Mock enterprise REST backend for an Apigee API Gateway hands-on project",
-  "main": "server.js",
+  "version": "2.0.0",
+  "description": "Mock enterprise REST backend + diagnostic harness for testing Apigee API Gateway policies",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node server.js",
-    "start:backend1": "cross-env PORT=3001 SERVER_ID=backend-1 node server.js",
-    "start:backend2": "cross-env PORT=3002 SERVER_ID=backend-2 node server.js"
+    "start": "node src/server.js",
+    "start:backend1": "cross-env PORT=3001 SERVER_ID=backend-1 node src/server.js",
+    "start:backend2": "cross-env PORT=3002 SERVER_ID=backend-2 node src/server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "express": "^4.19.2"

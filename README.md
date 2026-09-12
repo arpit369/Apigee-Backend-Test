@@ -1,108 +1,98 @@
-# Apigee Enterprise API Backend (Mock)
+# Enterprise API Backend — Apigee Policy Test Harness
 
-Simple Node.js + Express backend to sit behind Apigee. No auth, no DB, no
-rate limiting — Apigee owns all of that. This backend just returns mock JSON
-and stamps a `serverId` so you can prove load balancing across two instances.
+Mock enterprise REST backend built to sit behind Apigee. It stays intentionally
+dumb (mock data, no DB, no auth) — Apigee owns auth, quota, threat protection,
+etc. On top of the business APIs it exposes an **httpbin-style diagnostic
+harness** so every Apigee policy has a concrete endpoint to prove against.
 
-## Folder structure
+## Structure
 
 ```
 apigee-backend/
-├── server.js        # all routes + error handling (single file)
-├── package.json     # deps + run scripts
-├── .env.example     # sample PORT / SERVER_ID
+├── src/
+│   ├── server.js              # bootstrap + listen
+│   ├── app.js                 # express app, middleware, route mounts, errors
+│   ├── config.js              # env (PORT, SERVER_ID) + caps
+│   ├── middleware/
+│   │   ├── meta.js            # stamps serverId + requestId + timestamp on every response
+│   │   ├── logger.js          # one log line per request
+│   │   └── errors.js          # 404 + 400/500 envelopes
+│   └── routes/
+│       ├── business.js        # customer / admin / partner / payment
+│       └── diagnostics.js     # echo / status / delay / xml / cache / whoami ...
+├── test/smoke.test.js         # node --test, no framework
+├── Dockerfile, .dockerignore
+├── ecosystem.config.js        # pm2: runs both instances
+├── package.json, .env.example
 └── README.md
 ```
 
-## Install
+## Run
 
 ```bash
-cd apigee-backend
 npm install
+npm run start:backend1   # PORT=3001 SERVER_ID=backend-1
+npm run start:backend2   # PORT=3002 SERVER_ID=backend-2  (second terminal)
+npm test                 # smoke tests
 ```
 
-## Run two instances (two terminals)
+Every JSON response includes `serverId` + `meta.requestId` + `meta.timestamp`.
 
-Terminal 1 — Backend 1:
+## Business endpoints
+
+| Method | Path | Body |
+|---|---|---|
+| GET | `/customer/profile` | — |
+| POST | `/customer/orders` | `{product, quantity}` |
+| GET | `/admin/users` | — |
+| POST | `/admin/users` | `{name, email, role}` |
+| GET | `/partner/data` | — |
+| POST | `/payment/transfer` | `{fromAccount, toAccount, amount, currency}` |
+
+## Diagnostic endpoints → Apigee policy each one tests
+
+| Endpoint | What it does | Apigee policy to test |
+|---|---|---|
+| `ALL /echo` | reflects method, headers, query, body, ip | AssignMessage, CORS, security headers, header inject/strip, all mediation |
+| `GET /headers` | echoes received headers | AssignMessage / security-header policies |
+| `GET /ip` | client IP (trust-proxy) | Access Control (IP allow/deny), X-Forwarded-For |
+| `ALL /status/:code` | returns that HTTP status | FaultRules, RaiseFault, target error mapping, LB failover |
+| `ALL /delay/:seconds` | delays response (cap 10s) | target Timeout, Spike Arrest, Concurrent Rate Limit |
+| `GET /data/xml` | XML body | XMLToJSON / JSONToXML, XML threat protection |
+| `GET /data/large?count=N` | big JSON array (cap 1000) | message-size threat protection, Response Cache limits |
+| `POST /validate` | needs `{name,email}` else 400 | MessageValidation, ExtractVariables + RaiseFault |
+| `GET /cache/time` | fresh timestamp+random each call | **Response Cache** (value freezes when cached) |
+| `GET /auth/whoami` | echoes Authorization / API key / JWT claim headers | VerifyAPIKey, OAuthV2, JWT/JWS, BasicAuth, header stripping |
+| `GET /secure/data` | dummy protected resource | proves request passed the gateway (auth policies) |
+| `GET /health`, `/ready` | liveness / readiness | Target Server health checks, load balancing |
+
+## How to test key policies
+
+- **Quota / Spike Arrest**: hammer any endpoint; Apigee should 429 before the backend sees traffic.
+- **Response Cache**: attach to `GET /cache/time`; `timestamp` should stop changing until TTL expires.
+- **VerifyAPIKey / OAuth / JWT**: call `GET /auth/whoami` through Apigee; check what credential headers actually reached the backend (Apigee should strip/inject as configured).
+- **FaultRules**: `GET /status/500` (or 503) and confirm your custom error response replaces the raw backend one.
+- **Timeout / failover**: `GET /delay/8` against a proxy with a 5s timeout → Apigee should 504 / fail over.
+- **Threat protection**: POST deeply-nested / huge JSON to `/echo`; JSONThreatProtection should reject before the backend.
+- **Mediation**: `GET /data/xml` with a JSONToXML/XMLToJSON policy to convert in flight.
+- **Load balancing**: two instances (3001/3002); repeated proxy calls should alternate `serverId`.
+
+## cURL quickstart
 
 ```bash
-npm run start:backend1
-```
-
-Terminal 2 — Backend 2:
-
-```bash
-npm run start:backend2
-```
-
-Those scripts set `PORT` and `SERVER_ID` via `cross-env` (cross-platform).
-Manual equivalent:
-
-- Windows PowerShell: `$env:PORT=3001; $env:SERVER_ID="backend-1"; node server.js`
-- macOS/Linux: `PORT=3001 SERVER_ID=backend-1 node server.js`
-
-## Endpoints
-
-| Method | Path                | Body                                   |
-|--------|---------------------|----------------------------------------|
-| GET    | /health             | —                                      |
-| GET    | /customer/profile   | —                                      |
-| POST   | /customer/orders    | `{product, quantity}`                  |
-| GET    | /admin/users        | —                                      |
-| POST   | /admin/users        | `{name, email, role}`                  |
-| GET    | /partner/data       | —                                      |
-| POST   | /payment/transfer   | `{fromAccount, toAccount, amount, currency}` |
-
-## Test with cURL
-
-```bash
-# Health
 curl http://localhost:3001/health
-curl http://localhost:3002/health
-
-# Customer
-curl http://localhost:3001/customer/profile
-curl -X POST http://localhost:3001/customer/orders \
-  -H "Content-Type: application/json" \
-  -d '{"product":"Laptop","quantity":1}'
-
-# Admin
-curl http://localhost:3001/admin/users
-curl -X POST http://localhost:3001/admin/users \
-  -H "Content-Type: application/json" \
-  -d '{"name":"John","email":"john@example.com","role":"USER"}'
-
-# Partner
-curl http://localhost:3001/partner/data
-
-# Payment
-curl -X POST http://localhost:3001/payment/transfer \
-  -H "Content-Type: application/json" \
-  -d '{"fromAccount":"ACC001","toAccount":"ACC002","amount":5000,"currency":"INR"}'
-
-# 404 (unknown route)
-curl http://localhost:3001/does-not-exist
-
-# 400 (invalid JSON)
-curl -X POST http://localhost:3001/customer/orders \
-  -H "Content-Type: application/json" -d '{bad}'
+curl -X POST http://localhost:3001/validate -H "Content-Type: application/json" -d '{"name":"A"}'   # 400, missing email
+curl http://localhost:3001/status/503                                                                  # 503
+curl "http://localhost:3001/delay/2"                                                                   # ~2s
+curl http://localhost:3001/data/xml
+curl -H "Authorization: Bearer x" -H "X-Api-Key: k" http://localhost:3001/auth/whoami
+curl http://localhost:3001/echo -X POST -H "Content-Type: application/json" -d '{"hi":1}'
 ```
 
-On Windows PowerShell, `curl` is an alias for `Invoke-WebRequest` with
-different syntax. Either use `curl.exe ...` with the commands above, or
-`Invoke-RestMethod`:
+## Deploy
 
-```powershell
-Invoke-RestMethod http://localhost:3001/health
-Invoke-RestMethod -Method Post http://localhost:3001/payment/transfer -ContentType "application/json" -Body '{"fromAccount":"ACC001","toAccount":"ACC002","amount":5000,"currency":"INR"}'
-```
+- **Railway** (easiest, trusted HTTPS): deploy this repo as two services, set `SERVER_ID` per service, Generate Domain. See earlier setup notes.
+- **Debian VPS + pm2**: `pm2 start ecosystem.config.js` runs both instances; nginx + cert for HTTPS.
+- **Docker**: `docker build -t apigee-backend . && docker run -e PORT=3001 -e SERVER_ID=backend-1 -p 3001:3001 apigee-backend`
 
-## Verify load balancing before Apigee
-
-1. Start both instances (ports 3001 and 3002).
-2. Hit each directly and confirm the `serverId` field:
-   - `curl http://localhost:3001/customer/profile` → `"serverId":"backend-1"`
-   - `curl http://localhost:3002/customer/profile` → `"serverId":"backend-2"`
-3. In Apigee, register both as **Target Servers** and enable load balancing.
-   When you call the Apigee proxy repeatedly, the `serverId` in the response
-   should alternate between `backend-1` and `backend-2`.
+Point Apigee Target Servers at the two instances and load-balance across them.
