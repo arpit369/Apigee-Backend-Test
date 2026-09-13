@@ -2,3 +2,11 @@ node_modules
 npm-debug.log
 .env
 .git
+.github
+apigee-proxy
+cloudflared
+test
+*.md
+docker-compose.yml
+ecosystem.config.js
+nginx-apigee.conf
