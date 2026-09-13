@@ -36,13 +36,17 @@ services:
   # knowing the random URL in advance (derives hostname from X-Forwarded-* headers).
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
-    command: start-dev
+    # --import-realm auto-creates the apigee-demo realm + client + user rohan on
+    # startup from keycloak/import/, so a fresh container is fully configured.
+    command: start-dev --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: Admin123!
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
     restart: unless-stopped
 
   tunnel-keycloak:

@@ -10,3 +10,6 @@ cloudflared/config.yml
 # Apigee bundle build artifacts / scripts holding secrets
 apigee-proxy/oauth-demo.zip
 apigee-proxy/flowtest.py
+
+# Keycloak realm import holds a client secret + user password — never commit
+keycloak/import/
