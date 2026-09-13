@@ -1,0 +1,17 @@
+<!-- Builds the POST /token request. Reads ?code= from the callback query. -->
+<AssignMessage name="AM-Create-Token-Request">
+  <AssignTo createNew="true" type="request">tokenReq</AssignTo>
+  <Set>
+    <Verb>POST</Verb>
+    <Headers>
+      <Header name="Content-Type">application/x-www-form-urlencoded</Header>
+    </Headers>
+    <FormParams>
+      <FormParam name="grant_type">authorization_code</FormParam>
+      <FormParam name="client_id">rohankenji-apigee</FormParam>
+      <FormParam name="client_secret">{private.client_secret}</FormParam>
+      <FormParam name="code">{request.queryparam.code}</FormParam>
+      <FormParam name="redirect_uri">https://stage.int.nasa.apis.mmc.com/apigeelearning/callback</FormParam>
+    </FormParams>
+  </Set>
+</AssignMessage>

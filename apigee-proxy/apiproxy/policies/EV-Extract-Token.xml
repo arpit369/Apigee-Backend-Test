@@ -1,0 +1,11 @@
+<!-- Pulls tokens out of the Keycloak JSON response into flow variables. -->
+<ExtractVariables name="EV-Extract-Token">
+  <Source>tokenResp</Source>
+  <JSONPayload>
+    <Variable name="access_token"><JSONPath>$.access_token</JSONPath></Variable>
+    <Variable name="id_token"><JSONPath>$.id_token</JSONPath></Variable>
+    <Variable name="refresh_token"><JSONPath>$.refresh_token</JSONPath></Variable>
+    <Variable name="expires_in"><JSONPath>$.expires_in</JSONPath></Variable>
+  </JSONPayload>
+  <VariablePrefix>oauth</VariablePrefix>
+</ExtractVariables>

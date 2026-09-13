@@ -1,0 +1,38 @@
+<ProxyEndpoint name="default">
+  <PreFlow name="PreFlow">
+    <Request/>
+    <Response/>
+  </PreFlow>
+  <Flows>
+    <!-- STEP 1: browser hits /login -> 302 redirect to Keycloak authorize -->
+    <Flow name="Login">
+      <Condition>(proxy.pathsuffix MatchesPath "/login") and (request.verb = "GET")</Condition>
+      <Request>
+        <Step><Name>AM-Redirect-To-Keycloak</Name></Step>
+      </Request>
+      <Response/>
+    </Flow>
+
+    <!-- STEP 2: Keycloak redirects back to /callback?code=... -> exchange code for token -->
+    <Flow name="Callback">
+      <Condition>(proxy.pathsuffix MatchesPath "/callback") and (request.verb = "GET")</Condition>
+      <Request>
+        <Step><Name>KVM-Get-Secret</Name></Step>
+        <Step><Name>AM-Create-Token-Request</Name></Step>
+        <Step><Name>SC-Get-Access-Token</Name></Step>
+        <Step><Name>EV-Extract-Token</Name></Step>
+        <Step><Name>AM-Return-Token</Name></Step>
+      </Request>
+      <Response/>
+    </Flow>
+  </Flows>
+  <PostFlow name="PostFlow">
+    <Request/>
+    <Response/>
+  </PostFlow>
+  <HTTPProxyConnection>
+    <BasePath>/apigeelearning</BasePath>
+  </HTTPProxyConnection>
+  <!-- No backend target: every response is built inside the proxy -->
+  <RouteRule name="noroute"/>
+</ProxyEndpoint>

@@ -1,0 +1,11 @@
+<!-- Builds a 302 to Keycloak's /authorize. Starts the authorization-code flow. -->
+<AssignMessage name="AM-Redirect-To-Keycloak">
+  <AssignTo createNew="true" type="response">response</AssignTo>
+  <Set>
+    <StatusCode>302</StatusCode>
+    <ReasonPhrase>Found</ReasonPhrase>
+    <Headers>
+      <Header name="Location">https://fighters-camcorder-popular-tennis.trycloudflare.com/realms/apigee-demo/protocol/openid-connect/auth?client_id=rohankenji-apigee&amp;response_type=code&amp;scope=openid&amp;redirect_uri=https://stage.int.nasa.apis.mmc.com/apigeelearning/callback</Header>
+    </Headers>
+  </Set>
+</AssignMessage>

@@ -1,0 +1,7 @@
+<APIProxy revision="1" name="oauth-demo">
+  <DisplayName>oauth-demo</DisplayName>
+  <Description>Authorization-code flow: /login redirects to Keycloak, /callback exchanges code for token via ServiceCallout.</Description>
+  <ProxyEndpoints>
+    <ProxyEndpoint>default</ProxyEndpoint>
+  </ProxyEndpoints>
+</APIProxy>

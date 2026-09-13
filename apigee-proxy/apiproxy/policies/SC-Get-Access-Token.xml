@@ -1,0 +1,8 @@
+<!-- The ServiceCallout: sends tokenReq to Keycloak, stores reply in tokenResp. -->
+<ServiceCallout name="SC-Get-Access-Token">
+  <Request variable="tokenReq"/>
+  <Response>tokenResp</Response>
+  <HTTPTargetConnection>
+    <URL>https://fighters-camcorder-popular-tennis.trycloudflare.com/realms/apigee-demo/protocol/openid-connect/token</URL>
+  </HTTPTargetConnection>
+</ServiceCallout>

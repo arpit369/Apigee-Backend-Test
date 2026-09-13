@@ -1,0 +1,18 @@
+<!-- Returns the extracted tokens to the client as clean JSON. -->
+<AssignMessage name="AM-Return-Token">
+  <AssignTo createNew="true" type="response">response</AssignTo>
+  <Set>
+    <StatusCode>200</StatusCode>
+    <Headers>
+      <Header name="Content-Type">application/json</Header>
+    </Headers>
+    <Payload contentType="application/json">{
+  "success": true,
+  "access_token": "{oauth.access_token}",
+  "id_token": "{oauth.id_token}",
+  "refresh_token": "{oauth.refresh_token}",
+  "expires_in": "{oauth.expires_in}",
+  "token_type": "Bearer"
+}</Payload>
+  </Set>
+</AssignMessage>
