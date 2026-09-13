@@ -30,3 +30,24 @@ services:
     restart: unless-stopped
     depends_on:
       - backend-2
+
+  # Keycloak = free OAuth/OIDC server for testing Apigee ServiceCallout (auth-code flow).
+  # PROXY_HEADERS + HOSTNAME_STRICT=false let it work behind the quick tunnel without
+  # knowing the random URL in advance (derives hostname from X-Forwarded-* headers).
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: Admin123!
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    restart: unless-stopped
+
+  tunnel-keycloak:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://keycloak:8080
+    restart: unless-stopped
+    depends_on:
+      - keycloak
